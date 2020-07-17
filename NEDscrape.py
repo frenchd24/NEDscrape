@@ -9,9 +9,6 @@ __author__ = "David M. French - frenchd24@gmail.com"
 __version__="1.0"
 __date__ = "07/13/2020"
 
-from __future__ import print_function
-from __future__ import absolute_import
-
 import getpass
 import optparse
 import sys
