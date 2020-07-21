@@ -10,20 +10,23 @@ __version__="1.0"
 __date__ = "07/13/2020"
 
 import getpass
-import optparse
-import sys
-import os
 import csv
-import string
-import warnings
-import urllib
-import numpy
-from astropy.io.votable import parse,tree
 import math
-import Queue
-import threading
-import urllib2
+import optparse
+import os
+from queue import Queue
+import string
+import sys
 import time
+import threading
+# import urllib2
+from urllib.request import urlopen, urlretrieve
+from urllib.parse import quote, quote_plus, unquote_plus
+# from urllib.parse import unquote_plus
+import warnings
+
+from astropy.io.votable import parse, tree
+import numpy
 
 # these are the parameters for this code, should be in the same directory
 # from . import params
@@ -113,16 +116,20 @@ class ThreadUrl(threading.Thread):
 
             #grabs urls of hosts and reads or parses them according to their type
             try:
-                url = urllib2.urlopen(host[0])
-            except Exception, e:
+                # url = urllib2.urlopen(host[0])
+                # url = urlopen(host[0])
+                url_obj, headers = urlretrieve(host[0])
+
+            except Exception as e:
                 sys.stderr.write("\n Unable to return url file object. Here is the error message built into the exception: \n %s\n" %e)
 
             if host[1] ==1:
                 warnings.simplefilter("ignore")
                 votable1 = 'x'
                 try:
-                    votable1 = parse(url,pedantic=False)
-                except Exception, e:
+                    # votable1 = parse(url, pedantic=False)
+                    votable1 = parse(url_obj, pedantic=False)
+                except Exception as e:
                     sys.stderr.write("\n Unable to parse voTable. Here is the message built into the exception: \n %s \n" %e)
 
                 self.outQueue.put(votable1)
@@ -131,15 +138,17 @@ class ThreadUrl(threading.Thread):
             else:
                 html = 'x'
                 try:
-                    html = url.readlines()
-                except Exception, e:
+                    # html = url.readlines()
+                    with open(url_obj) as f:
+                        html = f.readlines()
+                except Exception as e:
                     sys.stderr.write("\n Unable to read html. Here is the message built into the exception: \n %s \n" %e)
 
                 self.outQueue.put(html)
 
             self.numberQueue.put(host[1])
             self.queue.task_done()
-            url.close()
+            # url.close()
 
 
 class galaxyClass(object):
@@ -170,9 +179,12 @@ class galaxyClass(object):
 #         voList = []
 
 
-        queue = Queue.Queue()
-        outQueue = Queue.Queue()
-        numberQueue = Queue.Queue()
+        # queue = Queue.Queue()
+        # outQueue = Queue.Queue()
+        # numberQueue = Queue.Queue()
+        queue = Queue()
+        outQueue = Queue()
+        numberQueue = Queue()
 
         t1 = ThreadUrl(queue,outQueue,numberQueue)
         t2 = ThreadUrl(queue,outQueue,numberQueue)
@@ -247,7 +259,7 @@ class galaxyClass(object):
             redshift = table.array['Redshift'][0]
             warnings.resetwarnings()
 
-        except Exception, e:
+        except Exception as e:
             sys.stderr.write("\n Unable to return redshift. Here is the error message "\
             "built into the exception:\n %s\n" %e)
 
@@ -271,7 +283,7 @@ class galaxyClass(object):
             dec = table.array['DEC'][0]
             warnings.resetwarnings()
 
-        except Exception, e:
+        except Exception as e:
             sys.stderr.write("\n Unable to return J2000 position. Here is the error message "\
             "built into the exception:\n %s\n" %e)
 
@@ -294,7 +306,7 @@ class galaxyClass(object):
             galacticLat = table.array['pos_lat_gal_d'][0]
             warnings.resetwarnings()
 
-        except Exception, e:
+        except Exception as e:
             sys.stderr.write("\n Unable to return galactic position. Here is the error message "\
             "built into the exception:\n %s\n" %e)
 
@@ -324,7 +336,7 @@ class galaxyClass(object):
 #             median_metricDist  = table.array['MetricDistance'][4]
             warnings.resetwarnings()
 
-        except Exception, e:
+        except Exception as e:
             sys.stderr.write("\n Unable to find redshift-independent distance. Here's the error "\
                 "message built into the exception: \n %s\n" %e)
 
@@ -354,7 +366,7 @@ class galaxyClass(object):
             morphology = table.array['morph_type'][0]
             warnings.resetwarnings()
 
-        except Exception, e:
+        except Exception as e:
             sys.stderr.write("\n Unable to return galaxy morphology. Here is the error message "\
             "built into the exception:\n %s\n" %e)
 
@@ -379,7 +391,7 @@ class galaxyClass(object):
                     distIndicator = line[index2+index+4:index3+index+index2]
                     break
 
-        except Exception, e:
+        except Exception as e:
             sys.stderr.write("\n Unable to return distance indicator. Here is the error message "\
             "built into the exception:\n %s\n" %e)
 
@@ -404,7 +416,7 @@ class galaxyClass(object):
                     luminosityClass = line[index4+index3+index2+index+4:index5+index4+index3+index+index2]
                     break
 
-        except Exception,e:
+        except Exception as e:
             sys.stderr.write("\n Unable to return luminosity class. Here is the error message "\
             "built into the exception:\n %s\n" %e)
 
@@ -424,7 +436,7 @@ class galaxyClass(object):
             EBminusV = table.array['gal_extinc_E(B-V)'][0]
             warnings.resetwarnings()
 
-        except Exception, e:
+        except Exception as e:
             sys.stderr.write("\n Unable to return EBminusV. Here is the error message "\
             "built into the exception:\n %s\n" %e)
 
@@ -445,7 +457,7 @@ class galaxyClass(object):
             radialVelocity = table.array['main_col6'][0]
             warnings.resetwarnings()
 
-        except Exception, e:
+        except Exception as e:
             sys.stderr.write("\n Unable to return Radial Velocity. Here is the error message "\
             "built into the exception:\n %s\n" %e)
 
@@ -468,7 +480,7 @@ class galaxyClass(object):
             minorDiameter = table.array['diam_min'][0]
             warnings.resetwarnings()
 
-        except Exception, e:
+        except Exception as e:
             sys.stderr.write("\n Unable to return major or minor diameter. Here is the error message "\
             "built into the exception:\n %s\n" %e)
 
@@ -532,7 +544,7 @@ class galaxyClass(object):
                                 photometry.append((fullBand,fullApparentMag,fullAbsoluteMag,\
                                     fullBolometric,fullRef))
 
-        except Exception,e:
+        except Exception as e:
             sys.stderr.write("Unable to return photometry data. Here is the error message "\
             "built into the exception:\n %s\n" %e)
 
@@ -551,11 +563,12 @@ class galaxyClass(object):
             names = table.array['name_col1']
             parsedNames = parseGalaxyNames(names)
             for name in parsedNames:
-                formattedName = urllib.unquote_plus(name).replace('\n','').strip()
+                # formattedName = urllib.unquote_plus(name).replace('\n','').strip()
+                formattedName = unquote_plus(name).replace('\n','').strip()
                 formattedNames.append(formattedName)
             warnings.resetwarnings()
 
-        except Exception, e:
+        except Exception as e:
             sys.stderr.write("\n Unable to return alternative names. Here is the error message "\
             "built into the exception:\n %s\n" %e)
             return 'x'
@@ -569,9 +582,13 @@ def parseGalaxyNames(nameList):
 
     newNameList = []
     for name in nameList:
+        # print("type(name): ", type(name))
+        if not isinstance(name, str):
+            name = name.decode('UTF-8')
+
         nname = name.strip()
         nname = nname.replace('*','')
-        nname = urllib.quote_plus(nname)
+        nname = quote_plus(nname)
         nname = nname.replace('\n','')
         newNameList.append(nname)
     return newNameList
@@ -615,7 +632,7 @@ def pickPreferredName(altNames, oldName):
         if not bfind(str(altNames),str(oldName)):
             try:
                 altNames.append(oldName)
-            except Exception,e:
+            except Exception as e:
                 sys.stdout.write("Issue with picking preferred name: {0}".format(e))
                 sys.stdout.write("altNames list was: {0}".format(altNames))
     else:
@@ -664,9 +681,9 @@ def returnGalaxyName(ra, dec, radius):
 
     mainhost = 'http://ned.ipac.caltech.edu/cgi-bin/objsearch?search_type=Near+Position+Search&in_csys=Equatorial&in_equinox=J2000.0&lon={0}&lat={1}&radius=0.5&hconst=73&omegam=0.27&omegav=0.73&corr_z=1&z_constraint=Unconstrained&z_value1=&z_value2=&z_unit=z&ot_include=ANY&nmp_op=ANY&out_csys=Equatorial&out_equinox=J2000.0&obj_sort=Distance+to+search+center&of=xml_main&zv_breaker=30000.0&list_limit=5&img_stamp=YES'.format(newra,newdec)
     try:
-        mainurl = urllib2.urlopen(mainhost)
+        mainurl = urlopen(mainhost)
         print('opened mainurl',mainurl)
-    except Exception, e:
+    except Exception as e:
         sys.stderr.write("\n Unable to return url file object. Here is the error message built into the exception: \n %s\n" %e)
 
     warnings.simplefilter("ignore")
@@ -674,7 +691,7 @@ def returnGalaxyName(ra, dec, radius):
     try:
         mainvotable = parse(mainurl,pedantic=False)
         print('parsed mainvotable',mainvotable)
-    except Exception, e:
+    except Exception as e:
         sys.stderr.write("\n Unable to parse voTable. Here is the message built into the exception: \n %s \n" %e)
 
     warnings.resetwarnings()
@@ -686,11 +703,11 @@ def returnGalaxyName(ra, dec, radius):
         maintable = mainvotable.get_table_by_id("NED_MainTable")
         mainName = maintable.array['main_col2'][0]
         mainName = str(mainName).strip()
-        name = urllib.quote_plus(mainName)
+        name = quote_plus(mainName)
         name = name.replace('\n','')
         print('found name: ',name)
         warnings.resetwarnings()
-    except Exception, e:
+    except Exception as e:
         sys.stderr.write("\n Unable to return alternative names. Here is the error message "\
         "built into the exception:\n %s\n" %e)
         name = False
@@ -703,7 +720,7 @@ def is_file(filename):
 
     try:
         openFile = open(filename,'rU')
-    except Exception, e:
+    except Exception as e:
         openFile = False
 
     return openFile
@@ -786,9 +803,9 @@ def main(opts):
     print()
     if os.path.exists(full_path):
         # It exists. Ask what to do.
-        answer = raw_input("%s already exists. Append results to this file? [y,n]" %opts.outname)
+        answer = input("%s already exists. Append results to this file? [y,n]" %opts.outname)
         while answer != 'y' and answer != 'n':
-            answer = raw_input("Please answer with a 'y' or 'n': ")
+            answer = input("Please answer with a 'y' or 'n': ")
         if answer == 'y':
             # open that file and read it as a dictionary csv, allowing it to be written to
             readerFile = open(full_path,'rU')
@@ -832,7 +849,7 @@ def main(opts):
                 nameListIndex = 0
                 index = 0
                 for n in newNameList:
-                    n = urllib.unquote_plus(n).replace('\n','').replace(' ','').strip()
+                    n = unquote_plus(n).replace('\n','').replace(' ','').strip()
                     n = n.replace('*','')
                     if n == oldName:
                         nameListIndex = index
@@ -840,7 +857,7 @@ def main(opts):
                     else:
                         index +=1
 #                 nameListIndex = newNameList.index(oldName)
-            except Exception,e:
+            except Exception as e:
                 # name not found so an exception is raised
                 nameListIndex = False
                 print('e: ',e)
@@ -863,7 +880,7 @@ def main(opts):
 
         if answer == 'n':
             # ask for a new filename, or give the option of quitting
-            aTwo = raw_input("Please enter new filename, or 'q' to quit: ")
+            aTwo = input("Please enter new filename, or 'q' to quit: ")
             if aTwo == 'q':
                 # quit the program
                 sys.exit()
@@ -992,7 +1009,7 @@ def main(opts):
         sys.stdout.flush()
 
         # remove weird URL coding from name, pick preferred name
-        oldName = urllib.unquote_plus(name).replace('\n','').strip()
+        oldName = unquote_plus(name).replace('\n','').strip()
         preferredName = pickPreferredName(alternativeNames,oldName)
 
 
