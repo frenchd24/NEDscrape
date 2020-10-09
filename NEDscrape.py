@@ -450,29 +450,74 @@ class galaxyClass(object):
         return distance_indicator, distance_indicator_ref
 
 
+
     def returnLuminosityClass(self):
         # find and return luminosity class (under Classifications)
-
-        luminosityClass = 'x'
         try:
-            for line in self.fullHtml:
-                index = line.find('Luminosity Class')
-                if index != -1:
-                    index2 = line[index:].find('<TD>')
-                    index3 = line[index2+index:].find('</TD>')
-                    index4 = line[index3+index2+index:].find('<TD>')
-                    index5 = line[index4+index3+index2+index:].find('</TD>')
-                    luminosityClass = line[index4+index3+index2+index+4:index5+index4+index3+index+index2]
-                    break
+            warnings.simplefilter("ignore")
+            table = self.votable.get_table_by_id("Classifications")
+            # --- check if "Distance Indicator" is present
+            ind = np.where(table.array['class_col1'].data == b'Luminosity Class')[0]
+            if ind.any():
+                # --- class_col3  is the NED Homogenized classification
+                # --- decode from bytes type to unicode string
+                luminosity_class = table.array['class_col3'].data[ind[0]].decode('UTF-8')
+                luminosity_class_ref = table.array['class_col5'].data[ind[0]].decode('UTF-8')
+            else:
+                luminosity_class = 'x'
+                luminosity_class_ref = 'x'
+
+            warnings.resetwarnings()
 
         except Exception as e:
-            sys.stderr.write("\n Unable to return luminosity class. Here is the error message "\
-            "built into the exception:\n %s\n" %e)
+            sys.stderr.write("\n Unable to return Luminosity Class. Here is the error message built into the exception:\n %s\n" %e)
+            luminosity_class = 'x'
+            luminosity_class_ref = 'x'
 
-        if isNumber(luminosityClass):
-            if math.isnan(float(luminosityClass)):
-                luminosityClass = 'x'
-        return luminosityClass
+        # --- try getting it from the HTML if the XML/VOTable fails
+        if luminosity_class == 'x':
+            try:
+                for line in self.fullHtml:
+                    index = line.find('Luminosity Class')
+                    if index != -1:
+                        index2 = line[index:].find('<td><strong>')
+                        index3 = line[index2+index:].find('<td><strong>')
+                        luminosity_class = line[index2 + index + len('<td><strong>'):index3 + index + index2]
+
+                        index_ref = line[index:].find('"ned_dw">')
+                        index_ref2 = line[index_ref+index:].find('</a></td></tr>')
+                        luminosity_class_ref = line[index + index_ref + len('"ned_dw">'):index + index_ref + index_ref2]
+                        break
+
+            except Exception as e:
+                sys.stderr.write("\n Unable to return Luminosity Class. Here is the error message built into the exception:\n %s\n" %e)
+
+        return luminosity_class, luminosity_class_ref
+
+    #
+    # def returnLuminosityClass(self):
+    #     # find and return luminosity class (under Classifications)
+    #
+    #     luminosityClass = 'x'
+    #     try:
+    #         for line in self.fullHtml:
+    #             index = line.find('Luminosity Class')
+    #             if index != -1:
+    #                 index2 = line[index:].find('<TD>')
+    #                 index3 = line[index2+index:].find('</TD>')
+    #                 index4 = line[index3+index2+index:].find('<TD>')
+    #                 index5 = line[index4+index3+index2+index:].find('</TD>')
+    #                 luminosityClass = line[index4+index3+index2+index+4:index5+index4+index3+index+index2]
+    #                 break
+    #
+    #     except Exception as e:
+    #         sys.stderr.write("\n Unable to return luminosity class. Here is the error message "\
+    #         "built into the exception:\n %s\n" %e)
+    #
+    #     if isNumber(luminosityClass):
+    #         if math.isnan(float(luminosityClass)):
+    #             luminosityClass = 'x'
+    #     return luminosityClass
 
 
     def returnEBminusV(self):
@@ -1000,7 +1045,7 @@ def main(opts):
         sys.stdout.write("7...")
         sys.stdout.flush()
 
-        luminosityClass = galaxy.returnLuminosityClass()
+        luminosity_class, luminosity_class_ref = galaxy.returnLuminosityClass()
 
         EBminusV = galaxy.returnEBminusV()
 
@@ -1080,7 +1125,7 @@ def main(opts):
         rIndependentDistMean_sd_min_max,\
         morphology,\
         distance_indicator,\
-        luminosityClass,\
+        luminosity_class,\
         EBminusV,\
         radialVelocity,\
         vcorr,\
