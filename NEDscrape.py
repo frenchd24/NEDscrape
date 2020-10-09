@@ -6,8 +6,8 @@ distributions and html parsing, and recompile specified data into a new csv file
 
 '''
 __author__ = "David M. French - frenchd24@gmail.com"
-__version__="1.0"
-__date__ = "07/13/2020"
+__version__="2.0"
+__date__ = "09/29/2020"
 
 import getpass
 import csv
@@ -26,7 +26,7 @@ from urllib.parse import quote, quote_plus, unquote_plus
 import warnings
 
 from astropy.io.votable import parse, tree
-import numpy
+import numpy as np
 
 # these are the parameters for this code, should be in the same directory
 # from . import params
@@ -378,27 +378,76 @@ class galaxyClass(object):
         return morphology
 
 
-    def returnDistIndicator(self):
+    # def returnDistIndicator(self):
+    #     # find and return distance indicator (under Classifications)
+    #
+    #     distIndicator = 'x'
+    #     try:
+    #         for line in self.fullHtml:
+    #             index = line.find('Distance Indicator')
+    #             if index != -1:
+    #                 index2 = line[index:].find('<TD>')
+    #                 index3 = line[index2+index:].find('</TD>')
+    #                 distIndicator = line[index2+index+4:index3+index+index2]
+    #                 break
+    #
+    #     except Exception as e:
+    #         sys.stderr.write("\n Unable to return distance indicator. Here is the error message "\
+    #         "built into the exception:\n %s\n" %e)
+    #
+    #     if isNumber(distIndicator):
+    #         if math.isnan(float(distIndicator)):
+    #             distIndicator = 'x'
+    #     return distIndicator
+
+
+
+    def returnDistanceIndicator(self):
         # find and return distance indicator (under Classifications)
 
-        distIndicator = 'x'
         try:
-            for line in self.fullHtml:
-                index = line.find('Distance Indicator')
-                if index != -1:
-                    index2 = line[index:].find('<TD>')
-                    index3 = line[index2+index:].find('</TD>')
-                    distIndicator = line[index2+index+4:index3+index+index2]
-                    break
+            warnings.simplefilter("ignore")
+            table = self.votable.get_table_by_id("Classifications")
+            # --- check if "Distance Indicator" is present
+            ind = np.where(table.array['class_col1'].data == b'Distance Indicator')[0]
+            if ind.any():
+                # --- class_col3  is the NED Homogenized classification
+                # --- decode from bytes type to unicode string
+                distance_indicator = table.array['class_col3'].data[ind[0]].decode('UTF-8')
+                distance_indicator_ref = table.array['class_col5'].data[ind[0]].decode('UTF-8')
+            else:
+                distance_indicator = 'x'
+                distance_indicator_ref = 'x'
+
+            warnings.resetwarnings()
 
         except Exception as e:
-            sys.stderr.write("\n Unable to return distance indicator. Here is the error message "\
-            "built into the exception:\n %s\n" %e)
+            sys.stderr.write("\n Unable to return Distance Indicator. Here is the error message built into the exception:\n %s\n" %e)
+            distance_indicator = 'x'
+            distance_indicator_ref = 'x'
 
-        if isNumber(distIndicator):
-            if math.isnan(float(distIndicator)):
-                distIndicator = 'x'
-        return distIndicator
+        # --- try getting it from the HTML if the XML/VOTable fails
+        if distance_indicator == 'x':
+            try:
+                for line in self.fullHtml:
+                    index = line.find('Distance Indicator')
+                    if index != -1:
+                        index2 = line[index:].find('<td><strong>')
+                        index3 = line[index2+index:].find('<td><strong>')
+                        distance_indicator = line[index2 + index + len('<td><strong>'):index3 + index + index2]
+
+                        index_ref = line[index:].find('"ned_dw">')
+                        index_ref2 = line[index_ref+index:].find('</a></td></tr>')
+                        distance_indicator_ref = line[index + index_ref + len('"ned_dw">'):index + index_ref + index_ref2]
+                        break
+
+            except Exception as e:
+                sys.stderr.write("\n Unable to return distance indicator. Here is the error message built into the exception:\n %s\n" %e)
+
+        if isNumber(distance_indicator):
+            if math.isnan(float(distance_indicator)):
+                distance_indicator = 'x'
+        return distance_indicator, distance_indicator_ref
 
 
     def returnLuminosityClass(self):
@@ -947,7 +996,7 @@ def main(opts):
         sys.stdout.write("6...")
         sys.stdout.flush()
 
-        distanceIndicator = galaxy.returnDistIndicator()
+        distance_indicator,  distance_indicator_ref = galaxy.returnDistanceIndicator()
         sys.stdout.write("7...")
         sys.stdout.flush()
 
@@ -1030,7 +1079,7 @@ def main(opts):
         J2000RA_Dec,galacticLong_Lat,\
         rIndependentDistMean_sd_min_max,\
         morphology,\
-        distanceIndicator,\
+        distance_indicator,\
         luminosityClass,\
         EBminusV,\
         radialVelocity,\
