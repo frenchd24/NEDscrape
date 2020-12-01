@@ -6,8 +6,8 @@ distributions and html parsing, and recompile specified data into a new csv file
 
 '''
 __author__ = "David M. French - frenchd24@gmail.com"
-__version__="2.0"
-__date__ = "09/29/2020"
+__version__="2.1"
+__date__ = "10/09/2020"
 
 import getpass
 import csv
@@ -27,6 +27,7 @@ import warnings
 
 from astropy.io.votable import parse, tree
 import numpy as np
+import pandas as pd
 
 # these are the parameters for this code, should be in the same directory
 # from . import params
@@ -833,13 +834,6 @@ def print_output(fieldnames, data):
 
 
 
-def retrieve_fields(galaxy):
-    '''
-        galaxy is the retrieved galaxy object, whose methods will return
-        each piece of data you ask for
-    '''
-
-    pass
 
 ##########################################################################################
 ##########################################################################################
@@ -1114,6 +1108,11 @@ def main(opts):
 
         print('Query time: ',queryTime)
         print('Time for other stuff: ',time.time() - start3)
+
+
+        # --- create DataFrame and write it out
+
+        df = pd.DataFrame()
 
 
 
