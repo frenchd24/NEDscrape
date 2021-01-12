@@ -4,4 +4,4 @@ Init
 
 '''
 
-__all__ = ['params', 'utilities', 'NEDscrape']
+__all__ = ['params', 'utilities', 'NEDscrape', 'photometry']

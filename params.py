@@ -53,9 +53,18 @@ fieldnames = ('preferredName',\
 'linDiameters (kpc)',\
 'distvcorr (Mpc)',\
 'inclination (deg)',\
-'photometry',\
+'b_phot',\
+'u_phot',\
+'g_phot',\
+'r_phot',\
+'i_phot',\
+'z_phot',\
+'j_phot',\
+'h_phot',\
+'k_phot',\
 'alternativeNames')
 
-                
+
 hubble_constant = 71.
+B_star = -19.57
 max_retrieve = 10000.
