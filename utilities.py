@@ -1,19 +1,17 @@
 
 '''
-$Id: utilities.py  v 1.0  07/13/20
+$Id: utilities.py
 
 Some useful tools for NEDscrape.
-
 '''
 
 __author__ = "David M. French - frenchd24@gmail.com"
-__version__="1.0"
-__date__ = "07/13/2020"
 
 import sys
 import math
 import numpy as np
 
+################################################################################
 
 def isNumber(s):
     '''
@@ -98,10 +96,20 @@ def notNull(s):
 
 def bfind(k,s):
     '''
-        This is a find function that returns true/false instead of an index
-        k is the input string, s is what yer lookin' for
+    This is a find function that returns true/false instead of an index.
 
-        bfind(k, s)
+    Inputs:
+    ------
+    k   :   str
+        Input string being searched
+    s   :   str
+        String being searched for
+
+    Returns:
+    ------
+    True/False  : boolean
+        Was 's' found in 'k'?
+    
     '''
 
     if str(k).find(s) == -1:
