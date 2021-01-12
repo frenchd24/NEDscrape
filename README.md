@@ -5,9 +5,9 @@ Now Python 3 compatible!
 
 Run without any commands for basic usage help::
 
-	python NEDscrape.py 
+	python NEDscrape.py
 
-	NEDscrape.py  version: 1.0   07/13/2020
+	NEDscrape.py  version: 3.0   01/11/2021
 
 	A program to grab galaxy data from the NED server.
 
@@ -17,4 +17,3 @@ Run without any commands for basic usage help::
 	 -n is the name of the csv file that will be created and the NED data written to
 	 -o is the full pathname describing where the file should be saved
 	 -v tells it to run verbosely
-

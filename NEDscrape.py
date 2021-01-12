@@ -7,7 +7,7 @@ distributions and html parsing, and recompile specified data into a new csv file
 """
 __author__ = "David M. French - frenchd24@gmail.com"
 __version__ = "3.0"
-__date__ = "12/16/2020"
+__date__ = "01/11/2021"
 
 import getpass
 import csv
