@@ -50,33 +50,29 @@ import photometry
 
 def parse_commandline():
     parser = optparse.OptionParser(
-        usage=__doc__, version="$Id: NEDscrape, v {} {}".format(__version__, __date__)
-    )
+        usage=__doc__, version="$Id: NEDscrape, v {} {}".format(__version__, __date__))
     parser.add_option(
         "-f",
         "--filename",
         dest="filename",
         action="store",
         type="string",
-        help="The name of the file containing the galaxy names to be queried"
-    )
+        help="The name a galaxy or of a file containing a list of "
+             "galaxy names to be queried")
     parser.add_option(
         "-o",
         "--outdir",
         dest="outdir",
         action="store",
-        help="Specify the directory in which to save newly generated csv table"
-    )
+        help="Specify the directory in which to save newly generated csv table")
     parser.add_option(
         "-n",
         "--outfile",
         dest="outfile",
         action="store",
-        help="Specify the output filename for the newly generated csv table"
-    )
+        help="Specify the output filename for the newly generated csv table")
     parser.add_option(
-        "-v", "--verbose", action="store_true", default=False, help="Run verbosely"
-    )
+        "-v", "--verbose", action="store_true", default=False, help="Run verbosely")
 
     opts, args = parser.parse_args()
 
@@ -1166,19 +1162,32 @@ def main(opts):
 
     else:
         #     fileLines = csv.DictReader(theFile,delimiter='|')
-        fileLines = csv.DictReader(opts.filename)
-        nameList = []
-        coordList = []
+        try:
+            fileLines = csv.DictReader(opts.filename)
+            nameList = []
+            coordList = []
 
-        for i in fileLines:
-            name = i["Object Name"]
-            ra = i["RA(deg)"]
-            dec = i["DEC(deg)"]
+            for i in fileLines:
+                name = i["Object Name"]
+                ra = i["RA(deg)"]
+                dec = i["DEC(deg)"]
 
-            nameList.append(name)
-            coordList.append([ra, dec])
+                nameList.append(name.replace(' ', ''))
+                coordList.append([ra, dec])
 
-        opts.filename.close()
+            opts.filename.close()
+        except KeyError:
+            # fileLines = np.loadtxt(opts.filename, unpack=False)
+            nameList = []
+            coordList = []
+            with open(opts.filename) as f:
+                for fileLine in f:
+                    nameList.append(fileLine.replace(' ',''))
+                    coordList.append(['x', 'x'])
+
+        else:
+            sys.stdout("Cannot read input file")
+            sys.exit()
 
     # --- format the names in the list and return a new list
     newNameList = parseGalaxyNames(nameList)
@@ -1199,7 +1208,7 @@ def main(opts):
             answer = input("Please answer with 'y' or 'n': ")
         if answer == "y":
             # open that file and read it as a dictionary csv, allowing it to be written to
-            readerFile = open(full_path, "rU")
+            readerFile = open(full_path, "r")
             print("opening: ", full_path)
             reader = csv.DictReader(readerFile)
             writerOutFile = open(opts.outdir + opts.outfile + "1" + ".csv", "wt")
@@ -1430,7 +1439,7 @@ def main(opts):
             preferredName.replace(" ", ""),
             oldName.replace(" ", ""),
             redshift,
-            (float(degreesJ2000RA), float(degreesJ2000Dec)),
+            (degreesJ2000RA, degreesJ2000Dec),
             J2000RA_Dec,
             galacticLong_Lat,
             rIndependentDistMean_sd_min_max,
