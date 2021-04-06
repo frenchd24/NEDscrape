@@ -6,8 +6,8 @@ distributions and html parsing, and recompile specified data into a new csv file
 
 """
 __author__ = "David M. French - frenchd24@gmail.com"
-__version__ = "3.0"
-__date__ = "01/11/2021"
+__version__ = "3.1"
+__date__ = "04/06/2021"
 
 import getpass
 import csv
@@ -18,6 +18,9 @@ from queue import Queue
 # import string
 import sys
 import time
+
+from timeit import default_timer as timer
+
 import threading
 import warnings
 import re   # regular expression
@@ -73,6 +76,9 @@ def parse_commandline():
         help="Specify the output filename for the newly generated csv table")
     parser.add_option(
         "-v", "--verbose", action="store_true", default=False, help="Run verbosely")
+    parser.add_option(
+        '-m', '--multithreading', action='store_true', default=False,
+        help='Turn on multithreading for faster data retrieval')
 
     opts, args = parser.parse_args()
 
@@ -89,6 +95,7 @@ def parse_commandline():
         print(" -f is a text file of names of objects, one per line, for which data will be retrieved")
         print(" -n is the name of the csv file that will be created and the NED data written to")
         print(" -o is the full pathname describing where the file should be saved")
+        print(" -m tells it to use multithreading to speed up data retrieval. Not for large queries!")
         print(" -v tells it to run verbosely")
         print()
         sys.exit(1)
@@ -186,7 +193,7 @@ class galaxyClass(object):
         self.name = name
 
 
-    def queryNED(self):
+    def queryNED(self, multithreading=False):
         """
         query NED server for each object name, returning the file object representing
         the xml VOTable output from NED as well as the redshift-independent distance html file
@@ -239,60 +246,119 @@ class galaxyClass(object):
                 name), 4,],
                 ]
 
-        # --- populate queue with data
-        for host in hosts:
-            #             time.sleep(0.1)
-            queue.put(host)
+        # --- if the multithreading options is on, add all the hosts
+        # --- to the queue all at once
+        if multithreading:
+            # --- populate queue with data
+            for host in hosts:
+                #             time.sleep(0.1)
+                queue.put(host)
 
-        # --- wait on the queue until everything has been processed
-        queue.join()
+            # --- wait on the queue until everything has been processed
+            queue.join()
 
-        # --- decide which object is which in the queue
-        first = outQueue.get()
-        second = outQueue.get()
-        third = outQueue.get()
-        fourth = outQueue.get()
+            # --- decide which object is which in the queue
+            first = outQueue.get()
+            second = outQueue.get()
+            third = outQueue.get()
+            fourth = outQueue.get()
 
-        number1 = numberQueue.get()
-        number2 = numberQueue.get()
-        number3 = numberQueue.get()
-        number4 = numberQueue.get()
+            number1 = numberQueue.get()
+            number2 = numberQueue.get()
+            number3 = numberQueue.get()
+            number4 = numberQueue.get()
 
-        if number1 == 1:
-            votable = first
-        elif number1 == 2:
-            html = first
-        elif number1 == 3:
-            fullHtml = first
-        elif number1 == 4:
-            photometry_votable = first
+            if number1 == 1:
+                votable = first
+            elif number1 == 2:
+                html = first
+            elif number1 == 3:
+                fullHtml = first
+            elif number1 == 4:
+                photometry_votable = first
 
-        if number2 == 1:
-            votable = second
-        elif number2 == 2:
-            html = second
-        elif number2 == 3:
-            fullHtml = second
-        elif number2 == 4:
-            photometry_votable = second
+            if number2 == 1:
+                votable = second
+            elif number2 == 2:
+                html = second
+            elif number2 == 3:
+                fullHtml = second
+            elif number2 == 4:
+                photometry_votable = second
 
-        if number3 == 1:
-            votable = third
-        elif number3 == 2:
-            html = third
-        elif number3 == 3:
-            fullHtml = third
-        elif number3 == 4:
-            photometry_votable = third
+            if number3 == 1:
+                votable = third
+            elif number3 == 2:
+                html = third
+            elif number3 == 3:
+                fullHtml = third
+            elif number3 == 4:
+                photometry_votable = third
 
-        if number4 == 1:
-            votable = fourth
-        elif number4 == 2:
-            html = fourth
-        elif number4 == 3:
-            fullHtml = fourth
-        elif number4 == 4:
-            photometry_votable = fourth
+            if number4 == 1:
+                votable = fourth
+            elif number4 == 2:
+                html = fourth
+            elif number4 == 3:
+                fullHtml = fourth
+            elif number4 == 4:
+                photometry_votable = fourth
+
+        # --- if no multithreading, then add and remove each host one at a time
+        else:
+            # --- populate queue with data
+            for host in hosts:
+                # request_time = time.start()
+                request_time = timer()
+                queue.put(host)
+
+                # --- wait on the queue until everything has been processed
+                queue.join()
+
+                # --- decide which object is which in the queue
+                if host[1] == 1:
+                    first = outQueue.get()
+                    number1 = numberQueue.get()
+
+                    if number1 == 1:
+                        votable = first
+                    else:
+                        print('Problem: number1 != 1')
+
+                elif host[1] == 2:
+                    second = outQueue.get()
+                    number2 = numberQueue.get()
+
+                    if number2 == 2:
+                        html = second
+                    else:
+                        print('Problem: number2 != 2')
+
+                elif host[1] == 3:
+                    third = outQueue.get()
+                    number3 = numberQueue.get()
+
+                    if number3 == 3:
+                        fullHtml = third
+                    else:
+                        print('Problem: number3 != 3')
+
+                elif host[1] == 4:
+                    fourth = outQueue.get()
+                    number4 = numberQueue.get()
+
+                    if number4 == 4:
+                        photometry_votable = fourth
+                    else:
+                        print('Problem: number4 != 4')
+
+                else:
+                    print('SOMETHING WENT TERRIBLY WRONG')
+                    sys.exit()
+
+                while timer() - request_time < 1.0:
+                    time.sleep(0.1)
+
 
         self.votable = votable
         self.html = html
@@ -783,8 +849,6 @@ class galaxyClass(object):
                 "k": k_df}
 
         return phot_dict
-
-
 
 
 
@@ -1331,7 +1395,12 @@ def main(opts):
         sys.stdout.write("1...")
         sys.stdout.flush()
         galaxy = galaxyClass(name)
-        galaxy.queryNED()
+
+        if opts.multithreading:
+            galaxy.queryNED(multithreading=True)
+        else:
+            galaxy.queryNED()
+
         query_time = time.time() - query_start
 
         other_start = time.time()
